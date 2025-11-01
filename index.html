@@ -537,12 +537,19 @@
       spriteImages.side1 = new Image();
       spriteImages.side1.src = 'assets/character-side-1.png';
 
-      // Sprites para caminar hacia arriba/abajo
+      // Sprites para caminar hacia arriba
       spriteImages.walking0 = new Image();
       spriteImages.walking0.src = 'assets/character-walking-0.png';
 
       spriteImages.walking1 = new Image();
       spriteImages.walking1.src = 'assets/character-walking-1.png';
+
+      // Sprites para caminar hacia abajo
+      spriteImages.back0 = new Image();
+      spriteImages.back0.src = 'assets/character-back-0.png';
+
+      spriteImages.back1 = new Image();
+      spriteImages.back1.src = 'assets/character-back-1.png';
 
       // Sprites para las chicas
       spriteImages.girl0_0 = new Image();
@@ -576,9 +583,11 @@
       if (dir === 2 || dir === 3) {
         // Movimiento lateral (izquierda/derecha) - usar sprites side
         img = animFrame === 0 ? spriteImages.side0 : spriteImages.side1;
-      } else {
+      } else if (dir === 1){
         // Movimiento vertical (arriba/abajo) - usar sprites walking
         img = animFrame === 0 ? spriteImages.walking0 : spriteImages.walking1;
+      } else {
+        img = animFrame === 0 ? spriteImages.back0 : spriteImages.back1;
       }
 
       // Verificar que la imagen esté cargada
