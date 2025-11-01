@@ -280,7 +280,7 @@
       ctx.font = '8px monospace';
       ctx.fillText('Color (<- ->)', 120, 50);
 
-      drawSprite(120, 70, state.color, 1, 0);
+      drawSprite(120, 70, state.color, 1, 0, 1);
 
       ctx.fillStyle = C.text;
       ctx.font = '6px monospace';
@@ -371,7 +371,7 @@
 
       // Jugador
       const pc = state.inverted ? darken(PC[state.color]) : PC[state.color];
-      drawSprite(state.px, state.py, state.color, state.facing, Math.floor(state.tick / 10) % 2);
+      drawSprite(state.px, state.py, state.color, state.facing, Math.floor(state.tick / 10) % 2, 1);
 
       ctx.restore();
 
@@ -464,33 +464,33 @@
 
     function drawBonus() {
       ctx.fillStyle = C.bg;
-      ctx.fillRect(0, 0, 240, 160);
+      ctx.drawImage(spriteImages.portal, 0, 0, 240, 160);
 
       ctx.fillStyle = C.highlight;
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('BONUS', 120, 30);
+      ctx.fillText('FASE BONUS!', 120, 30);
 
-      drawSprite(120, 60, state.color, 1, Math.floor(state.tick / 10) % 2);
+      drawSprite(95, 105, state.color, 0, Math.floor(state.tick / 10) % 2, 2);
 
       ctx.fillStyle = C.floor;
-      ctx.fillRect(20, 90, 200, 16);
+      ctx.fillRect(20, 40, 200, 16);
       ctx.strokeStyle = C.uiBorder;
-      ctx.strokeRect(20, 90, 200, 16);
+      ctx.strokeRect(20, 40, 200, 16);
 
       ctx.fillStyle = C.green;
-      ctx.fillRect(state.bonus.target - 10, 91, 20, 14);
+      ctx.fillRect(state.bonus.target - 10, 41, 20, 14);
 
       ctx.fillStyle = PC[state.color];
-      ctx.fillRect(state.bonus.x - 2, 88, 4, 20);
+      ctx.fillRect(state.bonus.x - 2, 38, 4, 20);
 
       ctx.fillStyle = C.text;
       ctx.font = '8px monospace';
       const tLeft = Math.max(0, state.bonus.max - state.bonus.t);
-      ctx.fillText(`T: ${tLeft.toFixed(1)}s`, 120, 120);
-      ctx.fillText(`P2: ${state.score}`, 60, 135);
+      ctx.fillText(`Mantén el equilibrio!`, 120, 70);
+      ctx.fillText(`Puntos: ${state.score}`, 60, 135);
       ctx.fillStyle = C.green;
-      ctx.fillText(`+${state.bonus.score}`, 180, 135);
+      ctx.fillText(`Bonus: +${state.bonus.score}`, 180, 135);
       ctx.fillStyle = C.highlight;
       ctx.font = '12px monospace';
       ctx.fillText(`${state.score + state.bonus.score}`, 120, 150);
@@ -563,10 +563,15 @@
 
       spriteImages.girl1_1 = new Image();
       spriteImages.girl1_1.src = 'assets/girl1-1.png';
-    }    // Llamar a la función de carga cuando se inicie el script
+
+      spriteImages.portal = new Image();
+      spriteImages.portal.src = 'assets/portal.png';
+
+    }   
+    // Llamar a la función de carga cuando se inicie el script
     loadSpriteImages();
 
-    function drawSprite(x, y, color, dir, frame) {
+    function drawSprite(x, y, color, dir, frame, scale) {
       let img;
 
       // Solo animar si el jugador se está moviendo
@@ -597,31 +602,13 @@
         // Voltear horizontalmente si va hacia la izquierda
         if (dir !== 2) {
           ctx.scale(-1, 1);
-          ctx.drawImage(img, -x - 8, y - 8, 16, 16);
+          ctx.drawImage(img, -x - 8, y - 8, 16 * scale, 16 * scale);
         } else {
-          ctx.drawImage(img, x - 8, y - 8, 16, 16);
+          ctx.drawImage(img, x - 8, y - 8, 16 * scale, 16 * scale);
         }
 
         ctx.restore();
-      } else {
-        // Fallback: dibujar sprite original si la imagen no está cargada
-        const c = PC[color];
-        ctx.fillStyle = c;
-        ctx.fillRect(x - 4, y - 4, 8, 8);
-        ctx.fillStyle = C.skin;
-        ctx.fillRect(x - 3, y - 8, 6, 4);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(x - 2, y - 7, 1, 1);
-        ctx.fillRect(x + 1, y - 7, 1, 1);
-        ctx.fillStyle = darken(c);
-        if (animFrame === 0) {
-          ctx.fillRect(x - 3, y + 4, 2, 4);
-          ctx.fillRect(x + 1, y + 4, 2, 4);
-        } else {
-          ctx.fillRect(x - 3, y + 5, 2, 3);
-          ctx.fillRect(x + 1, y + 3, 2, 5);
-        }
-      }
+      } 
 
       // Restaurar transparencia normal
       ctx.globalAlpha = 1;
@@ -817,6 +804,7 @@
 
     function updateBonus(dt) {
       state.tick++;
+      state.isMoving = true;
       state.bonus.t += dt;
 
       if (state.bonus.t >= state.bonus.max) {
