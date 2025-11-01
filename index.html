@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bar Night - GBA</title>
+  <title>Popelus Simulator</title>
   <style>
     * {
       margin: 0;
@@ -51,7 +51,10 @@
     const WORLD_HEIGHT = 500;
     const touch = {
       joystick: { active: false, dx: 0, dy: 0, id: null },
-      button: { pressed: false, id: null }
+      button: { pressed: false, id: null },
+      // Controles para la fase bonus
+      bonusLeft: { pressed: false, id: null },
+      bonusRight: { pressed: false, id: null }
     };
     const state = {
       scene: 0,
@@ -83,6 +86,17 @@
         c: i,
         spriteType: i % 2 // Alterna entre 0 (girl0) y 1 (girl1)
       })),
+      // Obstáculos con cooldown
+      obstacles: [
+        { x: 20, y: 100, w: 16, h: 16, t: 0 },
+        { x: 204, y: 100, w: 16, h: 16, t: 0 },
+        { x: 60, y: 150, w: 16, h: 16, t: 0 },
+        { x: 164, y: 150, w: 16, h: 16, t: 0 },
+        { x: 100, y: 200, w: 16, h: 16, t: 0 },
+        { x: 124, y: 200, w: 16, h: 16, t: 0 },
+        { x: 40, y: 260, w: 16, h: 16, t: 0 },
+        { x: 184, y: 260, w: 16, h: 16, t: 0 }
+      ],
       bonus: { x: 120, target: 120, t: 0, score: 0, max: 30 }
     };
 
@@ -117,16 +131,37 @@
         const x = (t.clientX - rect.left) * (240 / rect.width);
         const y = (t.clientY - rect.top) * (160 / rect.height);
 
-        // Joystick (derecha)
-        if (x > 190 && y > 110) {
-          touch.joystick.active = true;
-          touch.joystick.id = t.identifier;
+        // Transiciones de pantalla para menú (escena 0) y pantalla final (escena 3)
+        if (state.scene === 0 || state.scene === 3) {
+          handleScreenTransition();
+          return;
         }
-        // Botón acción (izquierda)
-        if (x < 50 && y > 110) {
-          touch.button.pressed = true;
-          touch.button.id = t.identifier;
-          state.spacePressed = true;
+
+        if (state.scene === 2) {
+          // Controles para la fase bonus
+          // Botón izquierda
+          if (x < 50 && y > 110) {
+            touch.bonusLeft.pressed = true;
+            touch.bonusLeft.id = t.identifier;
+          }
+          // Botón derecha
+          if (x > 190 && y > 110) {
+            touch.bonusRight.pressed = true;
+            touch.bonusRight.id = t.identifier;
+          }
+        } else if (state.scene === 1) {
+          // Controles del juego principal
+          // Joystick (derecha)
+          if (x > 190 && y > 110) {
+            touch.joystick.active = true;
+            touch.joystick.id = t.identifier;
+          }
+          // Botón acción (izquierda)
+          if (x < 50 && y > 110) {
+            touch.button.pressed = true;
+            touch.button.id = t.identifier;
+            state.spacePressed = true;
+          }
         }
       }
     }
@@ -158,6 +193,8 @@
       e.preventDefault();
       for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
+
+        // Controles del juego principal
         if (t.identifier === touch.joystick.id) {
           touch.joystick.active = false;
           touch.joystick.dx = 0;
@@ -169,6 +206,16 @@
           touch.button.id = null;
           state.spacePressed = false;
         }
+
+        // Controles de la fase bonus
+        if (t.identifier === touch.bonusLeft.id) {
+          touch.bonusLeft.pressed = false;
+          touch.bonusLeft.id = null;
+        }
+        if (t.identifier === touch.bonusRight.id) {
+          touch.bonusRight.pressed = false;
+          touch.bonusRight.id = null;
+        }
       }
     }
 
@@ -177,13 +224,32 @@
       const x = (e.clientX - rect.left) * (240 / rect.width);
       const y = (e.clientY - rect.top) * (160 / rect.height);
 
-      if (x > 190 && y > 110) {
-        touch.joystick.active = true;
-        touch.joystick.id = 'mouse';
+      // Transiciones de pantalla para menú (escena 0) y pantalla final (escena 3)
+      if (state.scene === 0 || state.scene === 3) {
+        handleScreenTransition();
+        return;
       }
-      if (x < 50 && y > 110) {
-        touch.button.pressed = true;
-        state.spacePressed = true;
+
+      if (state.scene === 2) {
+        // Controles para la fase bonus
+        if (x < 50 && y > 110) {
+          touch.bonusLeft.pressed = true;
+          touch.bonusLeft.id = 'mouse-left';
+        }
+        if (x > 190 && y > 110) {
+          touch.bonusRight.pressed = true;
+          touch.bonusRight.id = 'mouse-right';
+        }
+      } else if (state.scene === 1) {
+        // Controles del juego principal
+        if (x > 190 && y > 110) {
+          touch.joystick.active = true;
+          touch.joystick.id = 'mouse';
+        }
+        if (x < 50 && y > 110) {
+          touch.button.pressed = true;
+          state.spacePressed = true;
+        }
       }
     }
 
@@ -207,6 +273,7 @@
     }
 
     function handleMouseUp(e) {
+      // Controles del juego principal
       if (touch.joystick.id === 'mouse') {
         touch.joystick.active = false;
         touch.joystick.dx = 0;
@@ -217,21 +284,50 @@
         touch.button.pressed = false;
         state.spacePressed = false;
       }
+
+      // Controles de la fase bonus
+      if (touch.bonusLeft.id === 'mouse-left') {
+        touch.bonusLeft.pressed = false;
+        touch.bonusLeft.id = null;
+      }
+      if (touch.bonusRight.id === 'mouse-right') {
+        touch.bonusRight.pressed = false;
+        touch.bonusRight.id = null;
+      }
     }
 
     document.addEventListener('keydown', e => {
       keys[e.key] = true;
       if (state.scene === 0) {
-        if (e.key === 'Enter') {
-          state.scene = 1;
-          state.px = 120;
-          state.py = 400;
-          state.camY = 320;
+        if (e.key === 'Enter' || e.key === ' ') {
+          handleScreenTransition();
         }
-        if (e.key === 'ArrowLeft') state.color = (state.color + 5) % 6;
-        if (e.key === 'ArrowRight') state.color = (state.color + 1) % 6;
+        //if (e.key === 'ArrowLeft') state.color = (state.color + 5) % 6;
+        //if (e.key === 'ArrowRight') state.color = (state.color + 1) % 6;
       }
-      if (state.scene === 3 && e.key === 'Enter') {
+      if (state.scene === 3 && (e.key === 'Enter' || e.key === ' ')) {
+        handleScreenTransition();
+      }
+      if (e.key === ' ' && (state.scene === 1 || state.scene === 2)) {
+        state.spacePressed = true;
+      }
+    });
+
+    document.addEventListener('keyup', e => {
+      keys[e.key] = false;
+      if (e.key === ' ') state.spacePressed = false;
+    });
+
+    // Función auxiliar para manejar transiciones de pantalla
+    function handleScreenTransition() {
+      if (state.scene === 0) {
+        // Transición del menú al juego
+        state.scene = 1;
+        state.px = 120;
+        state.py = 400;
+        state.camY = 320;
+      } else if (state.scene === 3) {
+        // Transición de la pantalla final al menú
         state.scene = 0;
         state.score = 0;
         state.bonus.score = 0;
@@ -248,17 +344,10 @@
         state.dialog = '';
         state.dTimer = 0;
         state.girls.forEach(g => g.t = 0);
+        state.obstacles.forEach(obs => obs.t = 0);
         state.barmaidTimer = 0;
       }
-      if (e.key === ' ') {
-        state.spacePressed = true;
-      }
-    });
-
-    document.addEventListener('keyup', e => {
-      keys[e.key] = false;
-      if (e.key === ' ') state.spacePressed = false;
-    });
+    }
 
     function draw() {
       if (state.scene === 0) drawMenu();
@@ -274,11 +363,7 @@
       ctx.fillStyle = C.highlight;
       ctx.font = '16px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('BAR NIGHT', 120, 30);
-
-      ctx.fillStyle = C.text;
-      ctx.font = '8px monospace';
-      ctx.fillText('Color (<- ->)', 120, 50);
+      ctx.fillText('POPELUS SIMULATOR', 120, 30);
 
       drawSprite(120, 70, state.color, 1, 0, 1);
 
@@ -340,9 +425,29 @@
         { x: 184, y: 260, w: 16, h: 16 }
       ];
 
-      obstacles.forEach(obs => {
-        ctx.fillStyle = C.bar;
-        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+      // Obstáculos (bumpers con cooldown)
+      const nowTime = Date.now() / 1000;
+      state.obstacles.forEach(obs => {
+        const canBump = nowTime - obs.t > 20;
+
+        if (!canBump) {
+          // Obstáculo en cooldown: transparencia y tiempo restante
+          ctx.globalAlpha = 0.5;
+          ctx.fillStyle = C.bar;
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.globalAlpha = 1;
+
+          // Mostrar tiempo restante
+          ctx.fillStyle = C.red;
+          ctx.font = '6px monospace';
+          ctx.textAlign = 'center';
+          const left = Math.ceil(20 - (nowTime - obs.t));
+          ctx.fillText(left, obs.x + obs.w / 2, obs.y - 2);
+        } else {
+          // Obstáculo disponible: color normal
+          ctx.fillStyle = C.bar;
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        }
       });
 
       // Pista de baile (abajo)
@@ -494,6 +599,35 @@
       ctx.fillStyle = C.highlight;
       ctx.font = '12px monospace';
       ctx.fillText(`${state.score + state.bonus.score}`, 120, 150);
+
+      // Botones táctiles para la fase bonus
+      // Botón izquierda (misma posición que botón de acción en el juego)
+      ctx.fillStyle = touch.bonusLeft.pressed ? 'rgba(248, 208, 72, 0.8)' : 'rgba(248, 208, 72, 0.4)';
+      ctx.beginPath();
+      ctx.arc(25, 135, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = C.highlight;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = C.text;
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('←', 25, 140);
+
+      // Botón derecha (lado derecho, similar al joystick pero más a la izquierda)
+      ctx.fillStyle = touch.bonusRight.pressed ? 'rgba(248, 208, 72, 0.8)' : 'rgba(248, 208, 72, 0.4)';
+      ctx.beginPath();
+      ctx.arc(215, 135, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = C.highlight;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = C.text;
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('→', 215, 140);
     }
 
     function drawEnd() {
@@ -567,7 +701,7 @@
       spriteImages.portal = new Image();
       spriteImages.portal.src = 'assets/portal.png';
 
-    }   
+    }
     // Llamar a la función de carga cuando se inicie el script
     loadSpriteImages();
 
@@ -588,7 +722,7 @@
       if (dir === 2 || dir === 3) {
         // Movimiento lateral (izquierda/derecha) - usar sprites side
         img = animFrame === 0 ? spriteImages.side0 : spriteImages.side1;
-      } else if (dir === 1){
+      } else if ((dir === 1 && !state.inverted) || (dir === 0 && state.inverted)) {
         // Movimiento vertical (arriba/abajo) - usar sprites walking
         img = animFrame === 0 ? spriteImages.walking0 : spriteImages.walking1;
       } else {
@@ -600,7 +734,7 @@
         ctx.save();
 
         // Voltear horizontalmente si va hacia la izquierda
-        if (dir !== 2) {
+        if ((dir !== 2 && !state.inverted) || (dir === 2 && state.inverted)) {
           ctx.scale(-1, 1);
           ctx.drawImage(img, -x - 8, y - 8, 16 * scale, 16 * scale);
         } else {
@@ -608,7 +742,7 @@
         }
 
         ctx.restore();
-      } 
+      }
 
       // Restaurar transparencia normal
       ctx.globalAlpha = 1;
@@ -667,6 +801,7 @@
       if (state.time >= 1440) state.time %= 1440;
       if (state.time >= 360 && state.time < 720) {
         state.scene = 2;
+        state.inverted = false;
         state.bonus.max = Math.min(30, state.score / 100);
         state.bonus.t = 0;
         state.bonus.score = 0;
@@ -713,29 +848,56 @@
         dx += (Math.random() - 0.5) * state.drunk * 1;
       }
 
-      // Verificar colisión con obstáculos (ralentizan 50%)
-      const obstacles = [
-        { x: 20, y: 100, w: 16, h: 16 },
-        { x: 204, y: 100, w: 16, h: 16 },
-        { x: 60, y: 150, w: 16, h: 16 },
-        { x: 164, y: 150, w: 16, h: 16 },
-        { x: 100, y: 200, w: 16, h: 16 },
-        { x: 124, y: 200, w: 16, h: 16 },
-        { x: 40, y: 260, w: 16, h: 16 },
-        { x: 184, y: 260, w: 16, h: 16 }
-      ];
+      // Verificar colisión con obstáculos (efecto bumper)
+      const obstacles = state.obstacles;
 
-      let onObstacle = false;
+      // Verificar colisión individual con cada obstáculo
+      const now = Date.now() / 1000;
+      let onCooldownObstacle = false;
+
       obstacles.forEach(obs => {
-        if (state.px + 4 > obs.x && state.px - 4 < obs.x + obs.w &&
-          state.py + 8 > obs.y && state.py - 8 < obs.y + obs.h) {
-          onObstacle = true;
+        // Verificar si el obstáculo está en cooldown
+        const canBump = now - obs.t > 20;
+
+        // Calcular posición del jugador después del movimiento
+        const newPx = state.px + dx;
+        const newPy = state.py + dy;
+
+        // Verificar si hay colisión
+        if (newPx + 4 > obs.x && newPx - 4 < obs.x + obs.w &&
+          newPy + 8 > obs.y && newPy - 8 < obs.y + obs.h) {
+
+          if (canBump) {
+            // Obstáculo disponible: efecto bumper
+            // Activar cooldown del obstáculo
+            obs.t = now;
+
+            // Calcular el centro del obstáculo
+            const obsCenterX = obs.x + obs.w / 2;
+            const obsCenterY = obs.y + obs.h / 2;
+
+            // Calcular la dirección del empuje (desde el centro del obstáculo hacia el jugador)
+            const pushX = state.px - obsCenterX;
+            const pushY = state.py - obsCenterY;
+
+            // Normalizar la dirección y aplicar fuerza de rebote
+            const distance = Math.sqrt(pushX * pushX + pushY * pushY);
+            if (distance > 0) {
+              const bumperForce = 36; // Fuerza del empuje aumentada
+              dx += (pushX / distance) * bumperForce;
+              dy += (pushY / distance) * bumperForce;
+            }
+          } else {
+            // Obstáculo en cooldown: ralentizar 75%
+            onCooldownObstacle = true;
+          }
         }
       });
 
-      if (onObstacle) {
-        dx *= 0.5;
-        dy *= 0.5;
+      // Aplicar ralentización si está pasando por obstáculo en cooldown
+      if (onCooldownObstacle) {
+        dx *= 0.25; // Reducir velocidad al 25% (ralentización del 75%)
+        dy *= 0.25;
       }
 
       state.px = Math.max(10, Math.min(230, state.px + dx));
@@ -816,8 +978,14 @@
       state.bonus.target += Math.sin(state.bonus.t * 2.5) * 2 * speed;
       state.bonus.target = Math.max(30, Math.min(210, state.bonus.target));
 
+      // Controles de teclado
       if (keys.ArrowLeft) state.bonus.x -= 3;
       if (keys.ArrowRight) state.bonus.x += 3;
+
+      // Controles táctiles
+      if (touch.bonusLeft.pressed) state.bonus.x -= 3;
+      if (touch.bonusRight.pressed) state.bonus.x += 3;
+
       state.bonus.x = Math.max(22, Math.min(218, state.bonus.x));
 
       if (Math.abs(state.bonus.x - state.bonus.target) < 12) {
