@@ -462,7 +462,7 @@
           state.camY = 320;
           bgMusic.pause();
           bgMusic.currentTime = 0;
-          bgMusic.volume = 0.75;
+          bgMusic.volume = 1.0;
           document.getElementById('background').play();
         } else if (sceneNumber === 2) {
           // Iniciar bonus
@@ -1173,6 +1173,7 @@
             const pushY = state.py - obsCenterY;
             document.getElementById('collision').pause();
             document.getElementById('collision').currentTime = 0;
+            document.getElementById('collision').volume = 0.4;
             document.getElementById('collision').play();
 
             // Normalizar la dirección y aplicar fuerza de rebote
@@ -1235,6 +1236,8 @@
       state.girlCount = 0;
       state.mustDrink = false;
       state.mustTalk = true;
+
+      document.getElementById('drink').volume = 0.6;
       document.getElementById('drink').play();
       const msgs = state.drunk < 700 ?
         ['Aquí tienes tu licorca, gracias.', 'Una cerveza marchando. Son 2,5€', 'Una Estrella? Claro, sin problema. Efectivo o tarjeta?'] :
@@ -1248,6 +1251,7 @@
       state.girlCount++;
 
       document.getElementById('talk').pause();
+      document.getElementById('talk').volume = 0.65;
       document.getElementById('talk').currentTime = 0;
       document.getElementById('talk').play();
 
