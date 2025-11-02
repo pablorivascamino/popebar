@@ -406,7 +406,7 @@
           loop();
         }, false);*/
         bgMusic.volume = 0.75;
-        bgMusic.play();
+        document.getElementById('background').play();
       } else if (state.scene === 3 && Date.now() - state.time > 1500) {
         bgMusic.pause();
         bgMusic.currentTime = 0;
