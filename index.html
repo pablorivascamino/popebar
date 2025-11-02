@@ -60,7 +60,7 @@
 
 <body>
   <canvas id="game" width="240" height="160"></canvas>
-  <audio id="background" src="assets/background.mp3"></audio>
+  <audio id="background" src="assets/background.mp3" loop preload="auto"></audio>
   <audio id="collision" src="assets/collision.mp3"></audio>
   <audio id="drink" src="assets/drink.mp3"></audio>
   <audio id="talk" src="assets/talk.mp3"></audio>
@@ -397,6 +397,9 @@
       if (state.scene === 0) {
         bgMusic.pause();
         bgMusic.currentTime = 0;
+        bgMusic.volume = 0.75;
+        document.getElementById('background').play();
+
         // Transición del menú al juego
         state.scene = 1;
         state.px = 120;
@@ -405,8 +408,6 @@
         /*bgMusic.addEventListener('ended', function () {
           loop();
         }, false);*/
-        bgMusic.volume = 0.75;
-        document.getElementById('background').play();
       } else if (state.scene === 3 && Date.now() - state.time > 1500) {
         bgMusic.pause();
         bgMusic.currentTime = 0;
