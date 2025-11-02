@@ -671,7 +671,7 @@
       ctx.strokeStyle = C.uiBorder;
       ctx.strokeRect(20, 40, 200, 16);
 
-      ctx.fillStyle = C.text;
+      ctx.fillStyle = C.highlight;
       ctx.fillRect(state.bonus.target - 10, 41, 20, 14);
 
       ctx.fillStyle = PC[state.color];
@@ -681,6 +681,7 @@
       ctx.font = '8px monospace';
       const tLeft = Math.max(0, state.bonus.max - state.bonus.t);
       ctx.fillText(`Mantén el equilibrio!`, 120, 70);
+      //ctx.fillText(`Tiempo restante: ${tLeft}`, 120, 80);
       ctx.fillText(`Puntos: ${state.score}`, 60, 135);
       ctx.fillStyle = C.green;
       ctx.fillText(`Bonus: +${state.bonus.score}`, 180, 135);
@@ -890,7 +891,7 @@
       if (state.drunk > 0) state.drunk -= dt * 5;
 
       if (state.time >= 1440) state.time %= 1440;
-      if (state.time >= 360 && state.time < 720) {
+      if (state.time >= 300 && state.time < 720) {
         state.scene = 2;
         state.inverted = false;
         state.bonus.max = Math.min(30, state.score / 100);
@@ -970,6 +971,8 @@
             // Calcular la dirección del empuje (desde el centro del obstáculo hacia el jugador)
             const pushX = state.px - obsCenterX;
             const pushY = state.py - obsCenterY;
+            document.getElementById('collision').pause();
+            document.getElementById('collision').currentTime = 0;
             document.getElementById('collision').play();
 
             // Normalizar la dirección y aplicar fuerza de rebote
@@ -1000,7 +1003,7 @@
 
       // Interacción barra
       const distBar = Math.sqrt((state.px - 120) ** 2 + (state.py - state.barY) ** 2);
-      if (distBar < 15 && state.spacePressed && !state.mustTalk) {
+      if (distBar < 16 && state.spacePressed && !state.mustTalk) {
         drink();
         state.spacePressed = false;
       }
