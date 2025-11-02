@@ -32,6 +32,10 @@
 
 <body>
   <canvas id="game" width="240" height="160"></canvas>
+  <audio id="background" src="assets/background.mp3"></audio>
+  <audio id="collision" src="assets/collision.mp3"></audio>
+  <audio id="drink" src="assets/drink.mp3"></audio>
+  <audio id="talk" src="assets/talk.mp3"></audio>
 
   <script>
     const canvas = document.getElementById('game');
@@ -114,6 +118,7 @@
     }
 
     const PC = ['#f83030', '#30d048', '#f8d048', '#30a0f8', '#d048f8', '#f89030'];
+    const bgMusic = document.getElementById('background');
 
     // Touch controls
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -321,12 +326,19 @@
     // Función auxiliar para manejar transiciones de pantalla
     function handleScreenTransition() {
       if (state.scene === 0) {
+        bgMusic.pause();
         // Transición del menú al juego
         state.scene = 1;
         state.px = 120;
         state.py = 400;
         state.camY = 320;
+        bgMusic.addEventListener('ended', function() {
+            loop();
+        }, false);
+        bgMusic.volume = 0.75;
+        bgMusic.play();
       } else if (state.scene === 3) {
+        bgMusic.pause();
         // Transición de la pantalla final al menú
         state.scene = 0;
         state.score = 0;
@@ -879,6 +891,7 @@
             // Calcular la dirección del empuje (desde el centro del obstáculo hacia el jugador)
             const pushX = state.px - obsCenterX;
             const pushY = state.py - obsCenterY;
+            document.getElementById('collision').play();
 
             // Normalizar la dirección y aplicar fuerza de rebote
             const distance = Math.sqrt(pushX * pushX + pushY * pushY);
@@ -937,9 +950,10 @@
       state.girlCount = 0;
       state.mustDrink = false;
       state.mustTalk = true;
+      document.getElementById('drink').play();
       const msgs = state.drunk < 7 ?
         ['Aquí tienes tu licorca, gracias.', 'Una cerveza marchando. Son 2,5€', 'Una guiness? Claro, sin problema. Efectivo o tarjeta?'] :
-        ['Eres divertido!', 'Me encantas!', 'Que carisma!'];
+        ['Cuando acabe mi turno de noche llámame! Si no estoy con mi madre de recados estaré libre!', 'Eres el mejor cliente que tiene el bar, ojalá pudiésemos hablar más!', 'Se que soy algo mayor para ti pero... como me gustaría que me cuidases!'];
       state.dialog = msgs[Math.floor(Math.random() * msgs.length)];
       state.dTimer = 2; // Cambiado de 999 a 2
     }
@@ -947,6 +961,9 @@
     function talkGirl(girl, now) {
       girl.t = now;
       state.girlCount++;
+
+      document.getElementById('talk').pause();
+      document.getElementById('talk').play();
 
       const msgs = state.drunk < 7 ?
         ['Dejame en paz', 'No me interesas', 'Vete'] :
