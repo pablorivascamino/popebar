@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Popelus Simulator</title>
+  <title>Cova Simulator</title>
   <style>
     * {
       margin: 0;
@@ -327,6 +327,7 @@
     function handleScreenTransition() {
       if (state.scene === 0) {
         bgMusic.pause();
+        bgMusic.currentTime = 0;
         // Transición del menú al juego
         state.scene = 1;
         state.px = 120;
@@ -339,6 +340,7 @@
         bgMusic.play();
       } else if (state.scene === 3) {
         bgMusic.pause();
+        bgMusic.currentTime = 0;
         // Transición de la pantalla final al menú
         state.scene = 0;
         state.score = 0;
@@ -375,17 +377,23 @@
       ctx.fillStyle = C.highlight;
       ctx.font = '16px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('POPELUS SIMULATOR', 120, 30);
+      ctx.fillText('COVA SIMULATOR', 120, 30);
 
-      drawSprite(120, 70, state.color, 1, 0, 1);
+      drawSprite(120, 50, state.color, 1, 0, 1);
 
       ctx.fillStyle = C.text;
-      ctx.font = '6px monospace';
+      ctx.font = '8px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText('Bebe para gustar', 10, 100);
-      ctx.fillText('3 chicas -> barra', 10, 110);
-      ctx.fillText('Beber -> hablar', 10, 120);
-      ctx.fillText('Mareado invierte', 10, 130);
+      ctx.fillStyle = '#00FF00';
+
+      ctx.fillText('REGLAS', 10, 80);
+      ctx.fillStyle = C.text;
+
+      ctx.fillText('1. Bebe para gustar más y ganar más puntos por', 10, 90);
+      ctx.fillText('cada conversación', 10, 100);
+      ctx.fillText('2. Es necesario beber al hablar con 3 chicas', 10, 110);
+      ctx.fillText('3. Cova da Vella cierra a las 6am', 10, 120);
+      ctx.fillText('4. Si bebes mucho se invertirán los controles', 10, 130);
 
       const blink = Math.floor(Date.now() / 500) % 2;
       if (blink) {
@@ -511,7 +519,7 @@
       ctx.fillText('🍺', 40, 10);
       ctx.fillRect(50, 7, 60, 6);
       ctx.fillStyle = C.red;
-      ctx.fillRect(51, 8, Math.min(58, state.drunk * 5.8), 4);
+      ctx.fillRect(51, 8, Math.min(58, state.drunk * 0.058), 4);
 
       ctx.fillStyle = C.text;
       ctx.fillText(`${state.score}`, 180, 10);
@@ -559,7 +567,7 @@
         ctx.lineWidth = 2;
         ctx.strokeRect(10, 120, 220, 35);
         ctx.fillStyle = C.text;
-        ctx.font = '6px monospace';
+        ctx.font = '8px monospace';
         ctx.textAlign = 'left';
         wrapText(state.dialog, 15, 128, 210);
       } else {
@@ -595,7 +603,7 @@
       ctx.strokeStyle = C.uiBorder;
       ctx.strokeRect(20, 40, 200, 16);
 
-      ctx.fillStyle = C.green;
+      ctx.fillStyle = C.text;
       ctx.fillRect(state.bonus.target - 10, 41, 20, 14);
 
       ctx.fillStyle = PC[state.color];
@@ -810,6 +818,9 @@
 
     function updateGame(dt) {
       state.time += dt * 3;
+
+      if (state.drunk >0) state.drunk -= dt * 5;
+
       if (state.time >= 1440) state.time %= 1440;
       if (state.time >= 360 && state.time < 720) {
         state.scene = 2;
@@ -821,9 +832,9 @@
       }
 
       // Inversión
-      if (state.drunk >= 8) {
+      if (state.drunk >= 800) {
         state.inverted = Math.floor(Date.now() / 5000) % 2 === 0;
-      } else if (state.drunk >= 5) {
+      } else if (state.drunk >= 500) {
         state.inverted = true;
       } else {
         state.inverted = false;
@@ -857,7 +868,7 @@
       state.isMoving = Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1;
 
       if (state.drunk > 0) {
-        dx += (Math.random() - 0.5) * state.drunk * 1;
+        dx += (Math.random() - 0.5) * state.drunk * 0.014;
       }
 
       // Verificar colisión con obstáculos (efecto bumper)
@@ -946,13 +957,16 @@
     }
 
     function drink() {
-      state.drunk++;
+      state.drunk+=120;
+
+      if (state.drunk > 1000) state.drunk = 1000;
+
       state.girlCount = 0;
       state.mustDrink = false;
       state.mustTalk = true;
       document.getElementById('drink').play();
-      const msgs = state.drunk < 7 ?
-        ['Aquí tienes tu licorca, gracias.', 'Una cerveza marchando. Son 2,5€', 'Una guiness? Claro, sin problema. Efectivo o tarjeta?'] :
+      const msgs = state.drunk < 700 ?
+        ['Aquí tienes tu licorca, gracias.', 'Una cerveza marchando. Son 2,5€', 'Una Estrella? Claro, sin problema. Efectivo o tarjeta?'] :
         ['Cuando acabe mi turno de noche llámame! Si no estoy con mi madre de recados estaré libre!', 'Eres el mejor cliente que tiene el bar, ojalá pudiésemos hablar más!', 'Se que soy algo mayor para ti pero... como me gustaría que me cuidases!'];
       state.dialog = msgs[Math.floor(Math.random() * msgs.length)];
       state.dTimer = 2; // Cambiado de 999 a 2
@@ -963,15 +977,17 @@
       state.girlCount++;
 
       document.getElementById('talk').pause();
+      document.getElementById('talk').currentTime = 0;
       document.getElementById('talk').play();
 
-      const msgs = state.drunk < 7 ?
-        ['Dejame en paz', 'No me interesas', 'Vete'] :
+      const msgs = state.drunk < 400 ?
+        ['Qué tío tan raro... déjame en paz.', 'No me interesas...', 'No se quién eres, vete por favor.'] : state.drunk < 700 ?
+        ['Si, la verdad es que estamos estudiando en la USC también.', 'Estamos esperando por unas amigas de Erasmus que vienen de Portugal. En un rato llegan...', 'Fuimos a Tarasca el otro día y nos robaron el paraguas. Qué mala suerte...'] :
         ['Qué divertido eres! Te puedo pintar un corazón en la frente?', 'Qué chico tan interesante! Se nota que te preocupas por las mujeres, eres un encanto!', 'Vamos a bailar juntos! Eres genial!'];
       state.dialog = msgs[Math.floor(Math.random() * msgs.length)];
       state.dTimer = 2;
 
-      state.score += Math.floor(50 * (1 + state.drunk * 0.5));
+      state.score += Math.floor(50 * (1 + state.drunk * 0.005));
 
       if (state.girlCount >= 3) {
         state.mustDrink = true;
