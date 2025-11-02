@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="./assets/character-walking-0.png" />
   <title>Cova Simulator</title>
   <style>
     * {
@@ -406,7 +407,7 @@
         }, false);*/
         bgMusic.volume = 0.75;
         bgMusic.play();
-      } else if (state.scene === 3) {
+      } else if (state.scene === 3 && Date.now() - state.time > 1500) {
         bgMusic.pause();
         bgMusic.currentTime = 0;
         // Transición de la pantalla final al menú
@@ -460,7 +461,7 @@
       ctx.fillText('1. Bebe para gustar más y ganar más puntos por', 10, 90);
       ctx.fillText('cada conversación', 10, 100);
       ctx.fillText('2. Es necesario beber al hablar con 3 chicas', 10, 110);
-      ctx.fillText('3. Cova da Vella cierra a las 6am', 10, 120);
+      ctx.fillText('3. Cova da Vella cierra a las 5am', 10, 120);
       ctx.fillText('4. Si bebes mucho se invertirán los controles', 10, 130);
 
       const blink = Math.floor(Date.now() / 500) % 2;
@@ -964,6 +965,8 @@
             // Activar cooldown del obstáculo
             obs.t = now;
 
+            state.score -= 50 - Math.floor(state.drunk * 0.1);
+
             // Calcular el centro del obstáculo
             const obsCenterX = obs.x + obs.w / 2;
             const obsCenterY = obs.y + obs.h / 2;
@@ -1075,6 +1078,7 @@
 
       if (state.bonus.t >= state.bonus.max) {
         state.scene = 3;
+        state.time = Date.now();
         return;
       }
 
