@@ -60,7 +60,8 @@
 
 <body>
   <canvas id="game" width="240" height="160"></canvas>
-  <audio id="background" src="assets/background.mp3" loop preload="auto"></audio>
+
+  <audio id="background" src="assets/background.mp3"></audio>
   <audio id="collision" src="assets/collision.mp3"></audio>
   <audio id="drink" src="assets/drink.mp3"></audio>
   <audio id="talk" src="assets/talk.mp3"></audio>
@@ -149,6 +150,12 @@
       color: 0,
       spacePressed: false,
       isMoving: false,
+      // Variables para transiciones y pantallas intermedias
+      fadeAlpha: 0,
+      transitioning: false,
+      nextScene: null,
+      fadeDirection: 'in', // 'in' para fade in, 'out' para fade out
+      finalScore: 0,
       // Barra arriba
       barY: 40,
       // Chicas en pista de baile (abajo)
@@ -205,8 +212,8 @@
         const x = (t.clientX - rect.left) * (240 / rect.width);
         const y = (t.clientY - rect.top) * (160 / rect.height);
 
-        // Transiciones de pantalla para menú (escena 0) y pantalla final (escena 3)
-        if (state.scene === 0 || state.scene === 3) {
+        // Transiciones de pantalla para menú (escena 0), pantallas intermedias (0.5, 1.5) y pantalla final (escena 3)
+        if (state.scene === 0 || state.scene === 0.5 || state.scene === 1.5 || state.scene === 3) {
           handleScreenTransition();
           return;
         }
@@ -298,8 +305,8 @@
       const x = (e.clientX - rect.left) * (240 / rect.width);
       const y = (e.clientY - rect.top) * (160 / rect.height);
 
-      // Transiciones de pantalla para menú (escena 0) y pantalla final (escena 3)
-      if (state.scene === 0 || state.scene === 3) {
+      // Transiciones de pantalla para menú (escena 0), pantallas intermedias (0.5, 1.5) y pantalla final (escena 3)
+      if (state.scene === 0 || state.scene === 0.5 || state.scene === 1.5 || state.scene === 3) {
         handleScreenTransition();
         return;
       }
@@ -379,6 +386,12 @@
         //if (e.key === 'ArrowLeft') state.color = (state.color + 5) % 6;
         //if (e.key === 'ArrowRight') state.color = (state.color + 1) % 6;
       }
+      if (state.scene === 0.5 && (e.key === 'Enter' || e.key === ' ')) {
+        handleScreenTransition();
+      }
+      if (state.scene === 1.5 && (e.key === 'Enter' || e.key === ' ')) {
+        handleScreenTransition();
+      }
       if (state.scene === 3 && (e.key === 'Enter' || e.key === ' ')) {
         handleScreenTransition();
       }
@@ -392,52 +405,129 @@
       if (e.key === ' ') state.spacePressed = false;
     });
 
+    // Funciones para manejar transiciones fade y pantallas intermedias
+    function startFadeOut(nextScene) {
+      state.transitioning = true;
+      state.fadeDirection = 'out';
+      state.nextScene = nextScene;
+      state.fadeAlpha = 0;
+    }
+
+    function startFadeIn() {
+      state.transitioning = true;
+      state.fadeDirection = 'in';
+      state.fadeAlpha = 1;
+    }
+
+    function updateFade(dt) {
+      if (!state.transitioning) return;
+
+      const fadeSpeed = 2; // Velocidad del fade
+
+      if (state.fadeDirection === 'out') {
+        state.fadeAlpha += fadeSpeed * dt;
+        if (state.fadeAlpha >= 1) {
+          state.fadeAlpha = 1;
+          // Cambiar escena cuando el fade out termine
+          if (state.nextScene !== null) {
+            changeToScene(state.nextScene);
+            state.nextScene = null;
+          }
+          // Comenzar fade in
+          state.fadeDirection = 'in';
+        }
+      } else if (state.fadeDirection === 'in') {
+        state.fadeAlpha -= fadeSpeed * dt;
+        if (state.fadeAlpha <= 0) {
+          state.fadeAlpha = 0;
+          state.transitioning = false;
+        }
+      }
+    }
+
+    function changeToScene(sceneNumber) {
+      if (sceneNumber === 0.5) {
+        // Pantalla intermedia "comienza la noche"
+        state.scene = 0.5;
+      } else if (sceneNumber === 1.5) {
+        // Pantalla intermedia del bonus
+        state.finalScore = state.score;
+        state.scene = 1.5;
+      } else {
+        state.scene = sceneNumber;
+        if (sceneNumber === 1) {
+          // Resetear estado del juego
+          state.px = 120;
+          state.py = 400;
+          state.camY = 320;
+          bgMusic.pause();
+          bgMusic.currentTime = 0;
+          bgMusic.volume = 0.75;
+          document.getElementById('background').play();
+        } else if (sceneNumber === 2) {
+          // Iniciar bonus
+          state.inverted = false;
+          state.isMoving = true;
+          state.facing = 0;
+        } else if (sceneNumber === 0) {
+          // Volver al menú
+          bgMusic.pause();
+          bgMusic.currentTime = 0;
+          state.score = 0;
+          state.bonus.score = 0;
+          state.bonus.t = 0;
+          state.drunk = 0;
+          state.girlCount = 0;
+          state.time = 1260;
+          state.px = 120;
+          state.py = 400;
+          state.camY = 320;
+          state.mustDrink = false;
+          state.mustTalk = false;
+          state.isMoving = false;
+          state.dialog = '';
+          state.dTimer = 0;
+          state.girls.forEach(g => g.t = 0);
+          state.obstacles.forEach(obs => obs.t = 0);
+          state.barmaidTimer = 0;
+        }
+      }
+    }
+
+    function drawFade() {
+      if (state.transitioning && state.fadeAlpha > 0) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${state.fadeAlpha})`;
+        ctx.fillRect(0, 0, 240, 160);
+      }
+    }
+
     // Función auxiliar para manejar transiciones de pantalla
     function handleScreenTransition() {
       if (state.scene === 0) {
-        bgMusic.pause();
-        bgMusic.currentTime = 0;
-        bgMusic.volume = 0.75;
-        document.getElementById('background').play();
-
-        // Transición del menú al juego
-        state.scene = 1;
-        state.px = 120;
-        state.py = 400;
-        state.camY = 320;
-        /*bgMusic.addEventListener('ended', function () {
-          loop();
-        }, false);*/
+        // Transición del menú a pantalla intermedia
+        startFadeOut(0.5);
+      } else if (state.scene === 0.5) {
+        // Transición de pantalla intermedia a juego
+        startFadeOut(1);
+      } else if (state.scene === 1.5) {
+        // Transición de pantalla intermedia a bonus
+        startFadeOut(2);
       } else if (state.scene === 3 && Date.now() - state.time > 1500) {
-        bgMusic.pause();
-        bgMusic.currentTime = 0;
         // Transición de la pantalla final al menú
-        state.scene = 0;
-        state.score = 0;
-        state.bonus.score = 0;
-        state.bonus.t = 0;
-        state.drunk = 0;
-        state.girlCount = 0;
-        state.time = 1260;
-        state.px = 120;
-        state.py = 400;
-        state.camY = 320;
-        state.mustDrink = false;
-        state.mustTalk = false;
-        state.isMoving = false;
-        state.dialog = '';
-        state.dTimer = 0;
-        state.girls.forEach(g => g.t = 0);
-        state.obstacles.forEach(obs => obs.t = 0);
-        state.barmaidTimer = 0;
+        startFadeOut(0);
       }
     }
 
     function draw() {
       if (state.scene === 0) drawMenu();
+      else if (state.scene === 0.5) drawStartNightScreen();
       else if (state.scene === 1) drawGame();
+      else if (state.scene === 1.5) drawBonusScreen();
       else if (state.scene === 2) drawBonus();
       else if (state.scene === 3) drawEnd();
+
+      // Dibujar efecto fade si está activo
+      drawFade();
     }
 
     function drawMenu() {
@@ -752,6 +842,109 @@
       }
     }
 
+    // Funciones para dibujar pantallas intermedias
+    function drawStartNightScreen() {
+      // Fondo oscuro
+      ctx.fillStyle = C.bg;
+      ctx.fillRect(0, 0, 240, 160);
+
+      // Marco decorativo
+      ctx.fillStyle = C.ui;
+      ctx.fillRect(20, 20, 200, 120);
+      ctx.strokeStyle = C.uiBorder;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(20, 20, 200, 120);
+
+      // Título principal
+      ctx.fillStyle = C.highlight;
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('COMIENZA LA NOCHE', 120, 45);
+
+      // Emoji de luna (simulado con texto)
+      ctx.fillStyle = C.text;
+      ctx.font = '20px monospace';
+      ctx.fillText('◐', 120, 70);
+
+      // Texto descriptivo
+      ctx.fillStyle = C.text;
+      ctx.font = '8px monospace';
+      ctx.fillText('Es hora de salir de', 120, 90);
+      ctx.fillText('fiesta por Cova da Vella', 120, 100);
+
+      // Botón animado
+      const buttonBlink = Math.floor(Date.now() / 800) % 2;
+      if (buttonBlink) {
+        ctx.fillStyle = C.green;
+        ctx.fillRect(70, 110, 100, 20);
+        ctx.strokeStyle = C.text;
+        ctx.strokeRect(70, 110, 100, 20);
+
+        ctx.fillStyle = C.bg;
+        ctx.font = '8px monospace';
+        ctx.fillText('EMPEZAR', 120, 123);
+      } else {
+        ctx.strokeStyle = C.green;
+        ctx.strokeRect(70, 110, 100, 20);
+
+        ctx.fillStyle = C.green;
+        ctx.font = '8px monospace';
+        ctx.fillText('EMPEZAR', 120, 123);
+      }
+    }
+
+    function drawBonusScreen() {
+      // Fondo oscuro
+      ctx.fillStyle = C.bg;
+      ctx.fillRect(0, 0, 240, 160);
+
+      // Marco decorativo más elegante
+      ctx.fillStyle = C.ui;
+      ctx.fillRect(15, 15, 210, 130);
+      ctx.strokeStyle = C.highlight;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(15, 15, 210, 130);
+
+      // Título celebratorio
+      ctx.fillStyle = C.highlight;
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Llegando a...', 120, 35);
+      ctx.font = '16px monospace';
+      ctx.fillText('LOS TILOS!', 120, 55);
+
+      // Texto descriptivo
+      ctx.fillStyle = C.text;
+      ctx.font = '8px monospace';
+      ctx.fillText('El taxi te ha dejado', 120, 90);
+      ctx.fillText('de vuelta al barrio...', 120, 100);
+
+      // Puntuación obtenida
+      ctx.fillStyle = C.green;
+      ctx.font = '10px monospace';
+      ctx.fillText(`PUNTUACION: ${state.finalScore}`, 120, 115);
+
+      // Botón animado
+      const buttonBlink = Math.floor(Date.now() / 600) % 2;
+      if (buttonBlink) {
+        ctx.fillStyle = C.highlight;
+        ctx.fillRect(60, 125, 120, 18);
+        ctx.strokeStyle = C.text;
+        ctx.strokeRect(60, 125, 120, 18);
+
+        ctx.fillStyle = C.bg;
+        ctx.font = '8px monospace';
+        ctx.fillText('CONTINUAR', 120, 137);
+      } else {
+        ctx.strokeStyle = C.highlight;
+        ctx.strokeRect(60, 125, 120, 18);
+
+        ctx.fillStyle = C.highlight;
+        ctx.font = '8px monospace';
+        ctx.fillText('CONTINUAR', 120, 137);
+      }
+    }
+
     // Cargar imágenes de sprites
     const spriteImages = {};
     function loadSpriteImages() {
@@ -883,6 +1076,9 @@
     }
 
     function update(dt) {
+      // Actualizar transiciones fade
+      updateFade(dt);
+
       if (state.scene === 1) updateGame(dt);
       else if (state.scene === 2) updateBonus(dt);
     }
@@ -893,9 +1089,9 @@
       if (state.drunk > 0) state.drunk -= dt * 5;
 
       if (state.time >= 1440) state.time %= 1440;
-      if (state.time >= 300 && state.time < 720) {
-        state.scene = 2;
-        state.inverted = false;
+      if (state.time >= 300 && state.time < 720 && !state.transitioning) {
+        // Ir a pantalla intermedia del bonus en lugar de directamente al bonus
+        startFadeOut(1.5);
         state.bonus.max = Math.min(30, state.score / 100);
         state.bonus.t = 0;
         state.bonus.score = 0;
