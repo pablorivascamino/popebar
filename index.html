@@ -23,6 +23,10 @@
       /* Evitar scroll */
     }
 
+    canvas {
+      margin-top: 4vhx;
+    }
+
     #game {
       border: 8px solid #333;
       image-rendering: pixelated;
@@ -397,9 +401,9 @@
         state.px = 120;
         state.py = 400;
         state.camY = 320;
-        bgMusic.addEventListener('ended', function () {
+        /*bgMusic.addEventListener('ended', function () {
           loop();
-        }, false);
+        }, false);*/
         bgMusic.volume = 0.75;
         bgMusic.play();
       } else if (state.scene === 3) {
